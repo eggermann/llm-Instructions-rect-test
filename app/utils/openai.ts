@@ -7,6 +7,7 @@ export interface GeneratedComponent {
   html: string;
   css: string;
   javascript: string;
+  imageDescription: string;
 }
 
 export interface OpenAIResponse {
@@ -14,9 +15,10 @@ export interface OpenAIResponse {
   raw: string;
 }
 
-export interface WidgetWithImage extends GeneratedComponent {
+export interface WidgetWithImage extends Omit<GeneratedComponent, 'imageDescription'> {
   description: string;
   imageUrl: string;
+  imageDescription: string;
 }
 
 // OpenAI client initialization
@@ -41,7 +43,10 @@ export async function generateComponent(
 Format response as a JSON object with these properties:
 - html: The widget's HTML structure (use relative units for responsiveness)
 - css: The widget's CSS styles (include media queries if needed)
-- javascript: Any required JavaScript code`;
+- javascript: Any required JavaScript code
+- imageDescription: Create a vivid, artistic image description that captures the essence and emotion of the content. Focus on mood, style, and visual metaphors that represent the core message. Be specific about artistic style (e.g. 'digital art', 'watercolor', 'neon', 'abstract geometric'). The image will serve as an impactful background.
+
+${additionalContext ? `Additional context to analyze:\n${additionalContext}` : ''}`;
 
   const messages: ChatCompletionMessageParam[] = [
     {
@@ -82,6 +87,9 @@ Format response as a JSON object with these properties:
   let parsed: GeneratedComponent;
   try {
     parsed = JSON.parse(cleaned) as GeneratedComponent;
+    logger.info('Generated component with image description', {
+      imageDescription: parsed.imageDescription
+    });
   } catch (err) {
     // Fallback: Replace literal newline characters with escaped newlines and try again
     try {
@@ -96,7 +104,8 @@ Format response as a JSON object with these properties:
   if (
     parsed.html == null ||
     parsed.css == null ||
-    parsed.javascript == null // accept empty string
+    parsed.javascript == null || // accept empty string
+    parsed.imageDescription == null
   ) {
     logger.error("generateComponent: Response missing fields", { raw: cleaned });
     throw new Error("OpenAI response missing required fields");
@@ -116,10 +125,15 @@ export async function generateWidgetWithImage(
   additionalContext: string = ""
 ): Promise<WidgetWithImage> {
   // First generate the base component
-  const { content,raw } = await generateComponent(prompt, additionalContext);
+  const { content, raw } = await generateComponent(prompt, additionalContext);
 
-  // Create descriptive prompt for the background image
-  const imagePrompt = `Create an abstract, professional background image that complements this widget prompt: ${raw}. The image should be subtle enough to not interfere with text readability.`;
+  // Use the provided image description for DALL-E
+  const imagePrompt = content.imageDescription;
+
+  // Log the image description being used
+  logger.info('Using image description for DALL-E', {
+    imageDescription: imagePrompt
+  });
 
   // Generate image via DALL·E
   const imageResponse = await openai.images.generate({
@@ -151,6 +165,12 @@ export async function generateWidgetWithImage(
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.widget-container:hover {
+  transform: translateY(-2px);
 }
 
 /* Add semi-transparent overlay for better text contrast */
@@ -161,7 +181,7 @@ export async function generateWidgetWithImage(
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.85);
+  background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.8));
   pointer-events: none;
 }
 
@@ -192,5 +212,6 @@ ${content.css}`;
     javascript: content.javascript,
     description,
     imageUrl,
+    imageDescription: content.imageDescription
   };
 }

@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       htmlLength: widget.html.length,
       cssLength: widget.css.length,
       jsLength: widget.javascript.length,
+      imageDescription: widget.imageDescription
     });
 
     return NextResponse.json(widget);
