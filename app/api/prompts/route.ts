@@ -1,68 +1,57 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'path';
 
-const dataFile = path.join(process.cwd(), 'data', 'prompts.json');
+const DB_PATH = path.join(process.cwd(), 'data', 'prompts.json');
 
-// Ensure the data directory exists
-async function ensureDataDirectory() {
-  const dir = path.join(process.cwd(), 'data');
-  try {
-    await fs.access(dir);
-  } catch {
-    await fs.mkdir(dir);
+function getPrompts() {
+  if (!fs.existsSync(DB_PATH)) {
+    return { prompts: [] };
   }
+  const data = fs.readFileSync(DB_PATH, 'utf-8');
+  return JSON.parse(data);
 }
 
-// Initialize empty prompts file if it doesn't exist
-async function initializeDataFile() {
-  try {
-    await fs.access(dataFile);
-  } catch {
-    await fs.writeFile(dataFile, '[]');
+function savePrompts(prompts: any) {
+  const dirPath = path.dirname(DB_PATH);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
   }
+  fs.writeFileSync(DB_PATH, JSON.stringify(prompts, null, 2));
 }
 
-// GET /api/prompts
 export async function GET() {
   try {
-    await ensureDataDirectory();
-    await initializeDataFile();
-    const data = await fs.readFile(dataFile, 'utf8');
-    return NextResponse.json(JSON.parse(data));
+    const data = getPrompts();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading prompts:', error);
-    return NextResponse.json({ error: 'Failed to fetch prompts' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch prompts' },
+      { status: 500 }
+    );
   }
 }
 
-// POST /api/prompts
 export async function POST(request: Request) {
   try {
-    const { title, content } = await request.json();
-
-    if (!title || !content) {
+    const { content } = await request.json();
+    if (!content) {
       return NextResponse.json(
-        { error: 'Title and content are required' },
+        { error: 'Content is required' },
         { status: 400 }
       );
     }
 
-    await ensureDataDirectory();
-    await initializeDataFile();
-
-    const data = await fs.readFile(dataFile, 'utf8');
-    const prompts = JSON.parse(data);
-    
+    const data = getPrompts();
     const newPrompt = {
       id: Date.now(),
-      title,
       content,
       createdAt: new Date().toISOString(),
     };
 
-    prompts.push(newPrompt);
-    await fs.writeFile(dataFile, JSON.stringify(prompts, null, 2));
+    data.prompts.push(newPrompt);
+    savePrompts(data);
 
     return NextResponse.json(newPrompt, { status: 201 });
   } catch (error) {
