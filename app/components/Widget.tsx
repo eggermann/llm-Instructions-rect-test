@@ -7,6 +7,8 @@ export interface WidgetData {
   html: string;
   css: string;
   javascript: string;
+  description?: string;
+  imageUrl?: string;
 }
 
 export interface WidgetProps {
@@ -91,7 +93,10 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
                 )}
               </div>
             </div>
-            <div className="p-6 bg-gray-100">
+            <div className="p-6 bg-gray-100 relative">
+              {editedData.description && (
+                <p className="text-sm text-gray-600 mb-4">{editedData.description}</p>
+              )}
               <DynamicRect {...editedData} />
             </div>
           </div>
@@ -101,10 +106,11 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
           <div className="p-6">
             <div className="space-y-6">
               {[
-                { title: 'HTML', field: 'html' as const },
-                { title: 'CSS', field: 'css' as const },
-                { title: 'JavaScript', field: 'javascript' as const }
-              ].map(({ title, field }) => (
+                { title: 'Description', field: 'description' as const, show: Boolean(editedData.description) },
+                { title: 'HTML', field: 'html' as const, show: true },
+                { title: 'CSS', field: 'css' as const, show: true },
+                { title: 'JavaScript', field: 'javascript' as const, show: true },
+              ].filter(({ show }) => show).map(({ title, field }) => (
                 <div key={field}>
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-medium">{title}</h3>

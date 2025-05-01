@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/app/utils/logger';
-import { analyzeUrlsInPrompt, generateComponent } from '@/app/utils/openai';
-import { scrapeMultipleUrls } from '@/app/utils/urlScraper';
+import { generateWidgetWithImage } from '@/app/utils/openai';
+import { extractUrls, scrapeMultipleUrls } from '@/app/utils/urlScraper';
 
+/**
+ * OpenAI API route handler for generating widgets
+ */
 export async function POST(request: Request) {
   try {
     const { prompt } = await request.json();
@@ -15,35 +18,46 @@ export async function POST(request: Request) {
       );
     }
 
-    logger.info('Processing new component generation request', { prompt });
+    logger.info('Processing widget generation request', { prompt });
 
-    // Check for URLs in the prompt
-    const urls = await analyzeUrlsInPrompt(prompt);
+    // Extract and scrape URLs if present
+    const urls = extractUrls(prompt);
     let additionalContext = '';
-
+    
     if (urls.length > 0) {
-      logger.info('Found URLs in prompt, scraping content', { urls });
-      additionalContext = await scrapeMultipleUrls(urls);
+      logger.info('Found URLs in prompt', { urls });
+      try {
+        const scrapedContent = await scrapeMultipleUrls(urls);
+        if (scrapedContent) {
+          additionalContext = `Additional context from URLs:\n${scrapedContent}`;
+          logger.info('Successfully scraped URL content', {
+            contentLength: scrapedContent.length
+          });
+        }
+      } catch (error) {
+        logger.warn('Error scraping URLs', { error });
+        // Continue with widget generation even if URL scraping fails
+      }
     }
 
-    // Generate the component
-    const component = await generateComponent(prompt, additionalContext);
+    // Generate widget with background image and scraped context
+    const widget = await generateWidgetWithImage(prompt, additionalContext);
     
-    logger.info('Successfully generated component', {
+    logger.info('Successfully generated widget with image', {
       promptLength: prompt.length,
-      htmlLength: component.html.length,
-      cssLength: component.css.length,
-      jsLength: component.javascript.length
+      htmlLength: widget.html.length,
+      cssLength: widget.css.length,
+      jsLength: widget.javascript.length,
     });
 
-    return NextResponse.json(component);
+    return NextResponse.json(widget);
   } catch (error) {
-    logger.error('Error in component generation', { 
+    logger.error('Error in widget generation', { 
       error: error instanceof Error ? error.message : String(error) 
     });
     
     return NextResponse.json(
-      { error: 'Failed to generate content' },
+      { error: 'Failed to generate widget content' },
       { status: 500 }
     );
   }
