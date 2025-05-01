@@ -42,7 +42,12 @@ export async function generateComponent(
   const systemMessage = `You are a widget designer. Create a responsive widget based on the user prompt.
 Format response as a JSON object with these properties:
 - html: The widget's HTML structure (use relative units for responsiveness)
-- css: The widget's CSS styles (include media queries if needed)
+- css: The widget's CSS styles with strong emphasis on contrast and readability:
+  * Use high contrast color combinations
+  * Add text shadows or outlines where needed
+  * Ensure text is easily readable on any background
+  * Consider using semi-transparent backgrounds for text containers
+  * Include media queries for responsive design
 - javascript: Any required JavaScript code
 - imageDescription: Create a vivid, artistic image description that captures the essence and emotion of the content. Focus on mood, style, and visual metaphors that represent the core message. Be specific about artistic style (e.g. 'digital art', 'watercolor', 'neon', 'abstract geometric'). The image will serve as an impactful background.
 
@@ -181,7 +186,7 @@ export async function generateWidgetWithImage(
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.8));
+  background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.9));
   pointer-events: none;
 }
 
@@ -190,6 +195,18 @@ export async function generateWidgetWithImage(
   position: relative;
   z-index: 1;
   width: 100%;
+  color: #000;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* Text container for better contrast */
+.widget-content > * {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0.5rem 0;
 }
 
 /* Original widget styles */
