@@ -1,0 +1,7 @@
+• This project uses React Server Components with Next.js 14+
+• Follow modular architecture (e.g., modules/user, modules/product)
+• Split components by type: server/ vs client/
+• Only use 'use client' when necessary
+• Prefer static over dynamic rendering where possible
+• All server-side logic should remain in server components or APIs
+• Client components should not fetch directly from DB

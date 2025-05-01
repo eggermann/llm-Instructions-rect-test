@@ -1,0 +1,23 @@
+stages:
+  - install
+  - build
+  - test
+
+cache:
+  paths:
+    - node_modules/
+
+install:
+  stage: install
+  script:
+    - npm ci
+
+build:
+  stage: build
+  script:
+    - npm run build
+
+test:
+  stage: test
+  script:
+    - npm run test
