@@ -35,21 +35,27 @@ export default function HomePage() {
       
       <div className="max-w-3xl mx-auto">
         <form onSubmit={handleSubmit} className="mb-8">
-          <div className="flex gap-4">
-            <input
-              type="text"
-              value={promptInput}
-              onChange={(e) => setPromptInput(e.target.value)}
-              placeholder="Enter your prompt..."
-              className="flex-1 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-            <button
-              type="submit"
-              className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-sm"
-            >
-              Add Prompt
-            </button>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                placeholder="Enter your prompt... (You can include URLs to scrape content)"
+                className="flex-1 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-sm"
+              >
+                Add Prompt
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Tip: Include URLs in your prompt to automatically scrape and incorporate content.
+              For example: "Create a banner for this product: https://example.com/product"
+            </p>
           </div>
         </form>
 
