@@ -13,13 +13,12 @@ interface UrlAnalysisResult {
   urls: string[];
 }
 
-// OpenAI client initialization
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Constants
-const SYSTEM_PROMPT = `You are a creative web component generator specializing in eye-catching commercial banners.
+// OpenAI Configuration
+const OPENAI_CONFIG = {
+  model: 'gpt-4-turbo-preview',
+  maxTokens: 4000,
+  temperature: 0.8,
+  systemPrompt: `You are a creative web component generator specializing in eye-catching commercial banners.
 Create modern, animated, and interactive components using HTML, CSS, and JavaScript.
 
 Your response must be in valid JSON format with the following structure:
@@ -29,22 +28,7 @@ Your response must be in valid JSON format with the following structure:
   "javascript": "// Your JavaScript code here"
 }
 
-Example response:
-{
-  "html": "<div class='banner'><h1>Welcome</h1><p>Your content here</p></div>",
-  "css": ".banner { background: linear-gradient(45deg, #ff6b6b, #4ecdc4); padding: 2rem; border-radius: 8px; } .banner h1 { color: white; } .banner p { color: rgba(255,255,255,0.9); }",
-  "javascript": "document.querySelector('.banner').addEventListener('mousemove', (e) => { /* interaction code */ });"
-}
-
-Response Format Requirements:
-- Must be valid JSON
-- All values must be strings
-- 'html' and 'css' are required
-- 'javascript' can be empty string but must be present
-- Escape quotes properly in strings
-- No comments in the actual JSON structure
-
-Component Requirements:
+Requirements:
 - Use modern CSS features (flexbox, grid, animations)
 - Add smooth animations and transitions
 - Include interactive elements (hover effects, clicks)
@@ -61,15 +45,27 @@ Example features to include:
 - Interactive CTAs
 - Dynamic content updates
 
-Remember to return a valid JSON response containing html, css, and javascript properties.`;
+Remember to return a valid JSON response containing html, css, and javascript properties.`
+} as const;
 
-// Functions
+logger.info('Initializing OpenAI with configuration', OPENAI_CONFIG);
+
+export const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+function estimateTokens(text: string): number {
+  // Rough estimation: ~4 characters per token
+  return Math.ceil(text.length / 4);
+}
+
 export async function analyzeUrlsInPrompt(prompt: string): Promise<string[]> {
   logger.info('Analyzing prompt for URLs', { prompt });
   
   try {
     const analysis = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: OPENAI_CONFIG.model,
+      temperature: OPENAI_CONFIG.temperature,
       messages: [
         {
           role: "system",
@@ -116,20 +112,16 @@ export async function analyzeUrlsInPrompt(prompt: string): Promise<string[]> {
   }
 }
 
-function estimateTokens(text: string): number {
-  // Rough estimation: ~4 characters per token
-  return Math.ceil(text.length / 4);
-}
-
 export async function generateComponent(prompt: string, additionalContext: string = ''): Promise<GeneratedComponent> {
   logger.info('Generating component', { 
+    model: OPENAI_CONFIG.model,
     promptLength: prompt.length,
     contextLength: additionalContext.length
   });
 
   try {
     // Check estimated token count
-    const estimatedTokens = estimateTokens(prompt + additionalContext + SYSTEM_PROMPT);
+    const estimatedTokens = estimateTokens(prompt + additionalContext + OPENAI_CONFIG.systemPrompt);
     if (estimatedTokens > 14000) { // Leave some margin for safety
       logger.warn('Content might exceed token limit, truncating context', {
         estimatedTokens,
@@ -137,26 +129,26 @@ export async function generateComponent(prompt: string, additionalContext: strin
         contextLength: additionalContext.length
       });
       // Truncate additional context while preserving prompt
-      const maxContextLength = Math.max(1000, 14000 * 4 - prompt.length - SYSTEM_PROMPT.length);
+      const maxContextLength = Math.max(1000, 14000 * 4 - prompt.length - OPENAI_CONFIG.systemPrompt.length);
       additionalContext = additionalContext.substring(0, maxContextLength);
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: OPENAI_CONFIG.model,
       messages: [
         {
           role: "system",
-          content: SYSTEM_PROMPT + (additionalContext ? `\n\nUse this scraped content as reference:\n${additionalContext}` : '')
+          content: OPENAI_CONFIG.systemPrompt + (additionalContext ? `\n\nUse this scraped content as reference:\n${additionalContext}` : '')
         },
         {
           role: "user",
-          content: `Generate an eye-catching commercial banner component based on this prompt: ${prompt}.
+          content: `Generate an eye-catching commercial banner component based on this prompt: ${prompt}. 
           Make it visually appealing with animations and interactive elements.
           Return the response as a JSON object with 'html', 'css', and 'javascript' properties.`
         }
       ],
-      temperature: 0.8,
-      max_tokens: 3000,
+      temperature: OPENAI_CONFIG.temperature,
+      max_tokens: OPENAI_CONFIG.maxTokens,
       response_format: { type: "json_object" }
     });
 
@@ -170,15 +162,14 @@ export async function generateComponent(prompt: string, additionalContext: strin
     try {
       const parsedContent = JSON.parse(generatedContent) as GeneratedComponent;
       
-      // Allow empty JavaScript as it's optional
       if (!parsedContent.html || !parsedContent.css || parsedContent.javascript === undefined) {
         logger.error('Invalid component structure', { parsedContent });
         throw new Error('Invalid response format: Missing required fields');
       }
 
       // Ensure fields are strings
-      if (typeof parsedContent.html !== 'string' ||
-          typeof parsedContent.css !== 'string' ||
+      if (typeof parsedContent.html !== 'string' || 
+          typeof parsedContent.css !== 'string' || 
           typeof parsedContent.javascript !== 'string') {
         logger.error('Invalid field types', { parsedContent });
         throw new Error('Invalid response format: Fields must be strings');

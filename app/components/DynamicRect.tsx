@@ -12,6 +12,7 @@ interface DynamicRectProps {
 export default function DynamicRect({ html, css, javascript, height = '300px' }: DynamicRectProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -35,40 +36,81 @@ export default function DynamicRect({ html, css, javascript, height = '300px' }:
   useEffect(() => {
     if (!containerRef.current || !isInView) return;
 
-    // Clear previous content
-    containerRef.current.innerHTML = '';
+    const currentContainer = containerRef.current;
 
-    // Create style with scoped class
+    // Run any existing cleanup
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+
+    // Clear previous content
+    currentContainer.innerHTML = '';
+
+    // Create unique class for scoping
     const uniqueClass = `dynamic-rect-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Add scoped styles
     const styleElement = document.createElement('style');
     const scopedCss = css.replace(/([^{}]*){/g, `.${uniqueClass} $1 {`);
     styleElement.textContent = scopedCss;
-    containerRef.current.appendChild(styleElement);
+    currentContainer.appendChild(styleElement);
 
-    // Create content container with scoped class
+    // Create content container
     const contentContainer = document.createElement('div');
     contentContainer.className = uniqueClass;
     contentContainer.innerHTML = html;
-    containerRef.current.appendChild(contentContainer);
+    currentContainer.appendChild(contentContainer);
 
-    // Execute JavaScript in a safe context
+    // Create isolated script context
+    const context = {
+      container: contentContainer,
+      cleanup: () => {}
+    };
+
+    // Execute JavaScript
     const script = document.createElement('script');
     script.text = `
       (function() {
         const container = document.querySelector('.${uniqueClass}');
         try {
-          ${javascript}
+          const cleanup = (function() {
+            ${javascript}
+          })();
+          if (typeof cleanup === 'function') {
+            window['${uniqueClass}_cleanup'] = cleanup;
+          }
         } catch (error) {
           console.error('DynamicRect script error:', error);
         }
       })();
     `;
-    containerRef.current.appendChild(script);
+    currentContainer.appendChild(script);
 
-    // Cleanup function
+    // Store cleanup function
+    cleanupRef.current = () => {
+      try {
+        // Execute component cleanup if provided
+        const cleanup = (window as any)[`${uniqueClass}_cleanup`];
+        if (typeof cleanup === 'function') {
+          cleanup();
+        }
+        // Remove cleanup function from window
+        delete (window as any)[`${uniqueClass}_cleanup`];
+        // Clear container
+        if (currentContainer) {
+          currentContainer.innerHTML = '';
+        }
+      } catch (error) {
+        console.error('Cleanup error:', error);
+      }
+    };
+
+    // Cleanup on unmount or data change
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
       }
     };
   }, [html, css, javascript, isInView]);
