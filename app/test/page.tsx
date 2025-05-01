@@ -83,11 +83,20 @@ export default function TestPage() {
   const handleSaveWidget = () => {
     if (!widgetData || !widgetName.trim()) return;
 
+    if (!selectedPromptId || !widgetData) return;
+    
     try {
-      widgetStore.saveWidget({
+      const prompt = prompts.find(p => String(p.id) === selectedPromptId);
+      if (!prompt) throw new Error('Prompt not found');
+
+      const savedWidget = widgetStore.saveWidget({
         name: widgetName,
-        data: widgetData
-      });
+        data: widgetData,
+        promptId: selectedPromptId
+      }, selectedPromptId);
+
+      // Redirect to the portfolio page after saving
+      window.location.href = `/instruction/${selectedPromptId}#${savedWidget.id}`;
       setShowSaveDialog(false);
       setWidgetName('');
       setListKey(prev => prev + 1); // Force WidgetList to refresh

@@ -4,6 +4,7 @@ export interface SavedWidget {
   id: string;
   name: string;
   createdAt: string;
+  promptId: string;  // Add promptId to track which prompt generated this widget
   data: {
     html: string;
     css: string;
@@ -25,13 +26,14 @@ class WidgetStore {
     }
   }
 
-  saveWidget(widget: Omit<SavedWidget, 'id' | 'createdAt'>): SavedWidget {
+  saveWidget(widget: Omit<SavedWidget, 'id' | 'createdAt'>, promptId: string): SavedWidget {
     try {
       const widgets = this.getWidgets();
       const newWidget: SavedWidget = {
         ...widget,
         id: Date.now().toString(),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        promptId
       };
 
       widgets.push(newWidget);
@@ -42,6 +44,17 @@ class WidgetStore {
     } catch (error) {
       logger.error('Error saving widget', { error });
       throw new Error('Failed to save widget');
+    }
+  }
+
+  // Add method to get widgets for a specific prompt
+  getWidgetsByPromptId(promptId: string): SavedWidget[] {
+    try {
+      const widgets = this.getWidgets();
+      return widgets.filter(widget => widget.promptId === promptId);
+    } catch (error) {
+      logger.error('Error getting widgets by promptId', { error, promptId });
+      return [];
     }
   }
 
