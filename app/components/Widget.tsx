@@ -8,7 +8,7 @@ interface WidgetData {
   javascript: string;
 }
 
-interface WidgetProps {
+export interface WidgetProps {
   data: WidgetData;
 }
 
@@ -18,19 +18,31 @@ export default function Widget({ data }: WidgetProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Clear previous content
+    containerRef.current.innerHTML = '';
+
     // Create and append style element
     const styleElement = document.createElement('style');
     styleElement.textContent = data.css;
     containerRef.current.appendChild(styleElement);
 
-    // Set HTML content
-    const contentDiv = document.createElement('div');
-    contentDiv.innerHTML = data.html;
-    containerRef.current.appendChild(contentDiv);
+    // Create sandbox container for widget content
+    const sandboxContainer = document.createElement('div');
+    sandboxContainer.innerHTML = data.html;
+    containerRef.current.appendChild(sandboxContainer);
 
-    // Create and execute script
+    // Create and execute script in a safe way
     const script = document.createElement('script');
-    script.text = data.javascript;
+    script.type = 'text/javascript';
+    script.text = `
+      try {
+        (function() {
+          ${data.javascript}
+        })();
+      } catch (error) {
+        console.error('Widget script error:', error);
+      }
+    `;
     containerRef.current.appendChild(script);
 
     // Cleanup function
@@ -54,11 +66,20 @@ export default function Widget({ data }: WidgetProps) {
                   const styleElement = document.createElement('style');
                   styleElement.textContent = data.css;
                   containerRef.current.appendChild(styleElement);
-                  const contentDiv = document.createElement('div');
-                  contentDiv.innerHTML = data.html;
-                  containerRef.current.appendChild(contentDiv);
+                  const sandboxContainer = document.createElement('div');
+                  sandboxContainer.innerHTML = data.html;
+                  containerRef.current.appendChild(sandboxContainer);
                   const script = document.createElement('script');
-                  script.text = data.javascript;
+                  script.type = 'text/javascript';
+                  script.text = `
+                    try {
+                      (function() {
+                        ${data.javascript}
+                      })();
+                    } catch (error) {
+                      console.error('Widget script error:', error);
+                    }
+                  `;
                   containerRef.current.appendChild(script);
                 }
               }}
@@ -71,7 +92,7 @@ export default function Widget({ data }: WidgetProps) {
         <div className="border-b bg-gray-50 p-2">
           <p className="text-xs text-gray-500">Preview of the generated component</p>
         </div>
-        <div
+        <div 
           ref={containerRef}
           className="p-6 min-h-[200px] relative bg-white"
         />

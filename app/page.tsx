@@ -5,6 +5,8 @@ import { PromptList } from './components/PromptList';
 export default function HomePage() {
   const [promptInput, setPromptInput] = useState('');
 
+  const [key, setKey] = useState(0); // Add key for forcing re-render
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!promptInput.trim()) return;
@@ -20,6 +22,7 @@ export default function HomePage() {
 
       if (response.ok) {
         setPromptInput('');
+        setKey(prev => prev + 1); // Force PromptList to re-render
       }
     } catch (error) {
       console.error('Error adding prompt:', error);
@@ -50,7 +53,7 @@ export default function HomePage() {
           </div>
         </form>
 
-        <PromptList />
+        <PromptList key={key} />
       </div>
     </>
   );
