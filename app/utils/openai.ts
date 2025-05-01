@@ -29,7 +29,22 @@ Your response must be in valid JSON format with the following structure:
   "javascript": "// Your JavaScript code here"
 }
 
-Requirements:
+Example response:
+{
+  "html": "<div class='banner'><h1>Welcome</h1><p>Your content here</p></div>",
+  "css": ".banner { background: linear-gradient(45deg, #ff6b6b, #4ecdc4); padding: 2rem; border-radius: 8px; } .banner h1 { color: white; } .banner p { color: rgba(255,255,255,0.9); }",
+  "javascript": "document.querySelector('.banner').addEventListener('mousemove', (e) => { /* interaction code */ });"
+}
+
+Response Format Requirements:
+- Must be valid JSON
+- All values must be strings
+- 'html' and 'css' are required
+- 'javascript' can be empty string but must be present
+- Escape quotes properly in strings
+- No comments in the actual JSON structure
+
+Component Requirements:
 - Use modern CSS features (flexbox, grid, animations)
 - Add smooth animations and transitions
 - Include interactive elements (hover effects, clicks)
@@ -152,13 +167,29 @@ export async function generateComponent(prompt: string, additionalContext: strin
 
     logger.debug('Generated content from OpenAI', { generatedContent });
 
-    const parsedContent = JSON.parse(generatedContent) as GeneratedComponent;
-    
-    if (!parsedContent.html || !parsedContent.css || !parsedContent.javascript) {
-      throw new Error('Invalid response format');
-    }
+    try {
+      const parsedContent = JSON.parse(generatedContent) as GeneratedComponent;
+      
+      // Allow empty JavaScript as it's optional
+      if (!parsedContent.html || !parsedContent.css || parsedContent.javascript === undefined) {
+        logger.error('Invalid component structure', { parsedContent });
+        throw new Error('Invalid response format: Missing required fields');
+      }
 
-    return parsedContent;
+      // Ensure fields are strings
+      if (typeof parsedContent.html !== 'string' ||
+          typeof parsedContent.css !== 'string' ||
+          typeof parsedContent.javascript !== 'string') {
+        logger.error('Invalid field types', { parsedContent });
+        throw new Error('Invalid response format: Fields must be strings');
+      }
+
+      logger.info('Successfully validated component structure');
+      return parsedContent;
+    } catch (parseError) {
+      logger.error('Failed to parse or validate component', { parseError });
+      throw parseError;
+    }
   } catch (error) {
     logger.error('Error in component generation', { 
       error: error instanceof Error ? error.message : String(error),
