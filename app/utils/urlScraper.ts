@@ -1,5 +1,57 @@
 import { logger } from './logger';
 
+const MAX_CONTENT_LENGTH = 5000; // Limit content length to stay within token limits
+const RELEVANT_TAGS = ['title', 'meta', 'h1', 'h2', 'h3', 'p']; // Only extract content from these tags
+
+function extractRelevantContent(html: string): string {
+  try {
+    // Basic HTML parsing using regex
+    let relevantContent = '';
+    
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+    if (titleMatch) {
+      relevantContent += `Title: ${titleMatch[1]}\n`;
+    }
+
+    // Extract meta description
+    const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i);
+    if (descMatch) {
+      relevantContent += `Description: ${descMatch[1]}\n`;
+    }
+
+    // Extract headings and paragraphs (first occurrence of each)
+    RELEVANT_TAGS.forEach(tag => {
+      const regex = new RegExp(`<${tag}[^>]*>(.*?)<\/${tag}>`, 'i');
+      const match = html.match(regex);
+      if (match) {
+        relevantContent += `${tag.toUpperCase()}: ${match[1]}\n`;
+      }
+    });
+
+    // Clean up HTML entities and extra whitespace
+    relevantContent = relevantContent
+      .replace(/&[^;]+;/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Truncate if too long
+    if (relevantContent.length > MAX_CONTENT_LENGTH) {
+      relevantContent = relevantContent.substring(0, MAX_CONTENT_LENGTH) + '...';
+    }
+
+    logger.debug('Extracted relevant content', { 
+      contentLength: relevantContent.length 
+    });
+
+    return relevantContent;
+  } catch (error) {
+    logger.error('Error extracting relevant content', { error });
+    return '';
+  }
+}
+
 export function extractUrls(text: string): string[] {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = text.match(urlRegex) || [];
@@ -14,12 +66,16 @@ export async function scrapeUrl(url: string): Promise<string | null> {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const text = await response.text();
-    logger.debug('Successfully scraped URL', { 
+    const html = await response.text();
+    const relevantContent = extractRelevantContent(html);
+    
+    logger.debug('Successfully scraped and filtered URL content', { 
       url, 
-      contentLength: text.length 
+      originalLength: html.length,
+      filteredLength: relevantContent.length
     });
-    return text;
+    
+    return relevantContent;
   } catch (error) {
     logger.error('Error scraping URL', { 
       url, 
@@ -40,10 +96,13 @@ export async function scrapeMultipleUrls(urls: string[]): Promise<string> {
     }
   }
 
-  logger.debug('Completed multiple URL scrape', { 
-    urlCount: urls.length,
-    combinedContentLength: combinedContent.length 
-  });
-  
+  // Final length check
+  if (combinedContent.length > MAX_CONTENT_LENGTH) {
+    combinedContent = combinedContent.substring(0, MAX_CONTENT_LENGTH) + '...';
+    logger.debug('Combined content truncated to stay within limits', {
+      finalLength: combinedContent.length
+    });
+  }
+
   return combinedContent;
 }

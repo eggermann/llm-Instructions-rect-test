@@ -22,6 +22,13 @@ export const openai = new OpenAI({
 const SYSTEM_PROMPT = `You are a creative web component generator specializing in eye-catching commercial banners.
 Create modern, animated, and interactive components using HTML, CSS, and JavaScript.
 
+Your response must be in valid JSON format with the following structure:
+{
+  "html": "<!-- Your HTML code here -->",
+  "css": "/* Your CSS code here */",
+  "javascript": "// Your JavaScript code here"
+}
+
 Requirements:
 - Use modern CSS features (flexbox, grid, animations)
 - Add smooth animations and transitions
@@ -37,7 +44,9 @@ Example features to include:
 - Mouse-follow effects
 - Smooth reveal animations
 - Interactive CTAs
-- Dynamic content updates`;
+- Dynamic content updates
+
+Remember to return a valid JSON response containing html, css, and javascript properties.`;
 
 // Functions
 export async function analyzeUrlsInPrompt(prompt: string): Promise<string[]> {
@@ -92,35 +101,57 @@ export async function analyzeUrlsInPrompt(prompt: string): Promise<string[]> {
   }
 }
 
-export async function generateComponent(prompt: string, additionalContext: string = ''): Promise<GeneratedComponent> {
-  logger.info('Generating component', { prompt, hasAdditionalContext: !!additionalContext });
+function estimateTokens(text: string): number {
+  // Rough estimation: ~4 characters per token
+  return Math.ceil(text.length / 4);
+}
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT + (additionalContext ? `\n\nUse this scraped content as reference:\n${additionalContext}` : '')
-      },
-      {
-        role: "user",
-        content: `Generate an eye-catching commercial banner component based on this prompt: ${prompt}. 
-        Make it visually appealing with animations and interactive elements.`
-      }
-    ],
-    temperature: 0.8,
-    max_tokens: 3000,
-    response_format: { type: "json_object" }
+export async function generateComponent(prompt: string, additionalContext: string = ''): Promise<GeneratedComponent> {
+  logger.info('Generating component', { 
+    promptLength: prompt.length,
+    contextLength: additionalContext.length
   });
 
-  const generatedContent = completion.choices[0]?.message?.content;
-  if (!generatedContent) {
-    throw new Error('No content generated');
-  }
-
-  logger.debug('Generated content from OpenAI', { generatedContent });
-
   try {
+    // Check estimated token count
+    const estimatedTokens = estimateTokens(prompt + additionalContext + SYSTEM_PROMPT);
+    if (estimatedTokens > 14000) { // Leave some margin for safety
+      logger.warn('Content might exceed token limit, truncating context', {
+        estimatedTokens,
+        promptLength: prompt.length,
+        contextLength: additionalContext.length
+      });
+      // Truncate additional context while preserving prompt
+      const maxContextLength = Math.max(1000, 14000 * 4 - prompt.length - SYSTEM_PROMPT.length);
+      additionalContext = additionalContext.substring(0, maxContextLength);
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT + (additionalContext ? `\n\nUse this scraped content as reference:\n${additionalContext}` : '')
+        },
+        {
+          role: "user",
+          content: `Generate an eye-catching commercial banner component based on this prompt: ${prompt}.
+          Make it visually appealing with animations and interactive elements.
+          Return the response as a JSON object with 'html', 'css', and 'javascript' properties.`
+        }
+      ],
+      temperature: 0.8,
+      max_tokens: 3000,
+      response_format: { type: "json_object" }
+    });
+
+    const generatedContent = completion.choices[0]?.message?.content;
+    if (!generatedContent) {
+      throw new Error('No content generated');
+    }
+
+    logger.debug('Generated content from OpenAI', { generatedContent });
+
     const parsedContent = JSON.parse(generatedContent) as GeneratedComponent;
     
     if (!parsedContent.html || !parsedContent.css || !parsedContent.javascript) {
@@ -129,7 +160,29 @@ export async function generateComponent(prompt: string, additionalContext: strin
 
     return parsedContent;
   } catch (error) {
-    logger.error('Error parsing OpenAI response', { error });
-    throw new Error('Invalid response format');
+    logger.error('Error in component generation', { 
+      error: error instanceof Error ? error.message : String(error),
+      type: error instanceof Error ? error.constructor.name : 'Unknown'
+    });
+
+    if (error instanceof OpenAI.APIError) {
+      if (error.status === 400) {
+        if (error.message.includes('maximum context length')) {
+          throw new Error('Content too long. Please try with a shorter prompt or fewer URLs.');
+        }
+        if (error.message.includes('response_format')) {
+          logger.error('OpenAI response format error', { error });
+          throw new Error('Internal error: Invalid response format configuration');
+        }
+      }
+      throw new Error(`OpenAI API error: ${error.message}`);
+    }
+
+    if (error instanceof SyntaxError) {
+      logger.error('JSON parsing error', { error });
+      throw new Error('Failed to parse component data');
+    }
+
+    throw new Error('Failed to generate component');
   }
 }

@@ -1,4 +1,4 @@
-type LogLevel = 'info' | 'error' | 'debug';
+type LogLevel = 'info' | 'error' | 'debug' | 'warn';
 
 interface LogEntry {
   timestamp: string;
@@ -39,6 +39,11 @@ class Logger {
 
   debug(message: string, data?: any) {
     const entry = this.createEntry('debug', message, data);
+    this.saveLog(entry);
+  }
+
+  warn(message: string, data?: any) {
+    const entry = this.createEntry('warn', message, data);
     this.saveLog(entry);
   }
 
