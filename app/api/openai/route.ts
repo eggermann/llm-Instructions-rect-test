@@ -21,15 +21,24 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that generates high-quality prompts for businesses."
+          content: `You are a web component generator that creates HTML, CSS, and JavaScript code based on prompts.
+          Always return your response in the following JSON format:
+          {
+            "html": "<!-- Your HTML code here -->",
+            "css": "/* Your CSS code here */",
+            "javascript": "// Your JavaScript code here"
+          }
+          Ensure the code is complete, well-formatted, and creates an interactive component.
+          Use modern best practices and ensure the component is responsive.`
         },
         {
           role: "user",
-          content: prompt
+          content: `Generate a web component based on this prompt: ${prompt}`
         }
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 2000,
+      response_format: { type: "json_object" }
     });
 
     const generatedContent = completion.choices[0]?.message?.content;
@@ -38,7 +47,18 @@ export async function POST(request: Request) {
       throw new Error('No content generated');
     }
 
-    return NextResponse.json({ content: generatedContent });
+    try {
+      const parsedContent = JSON.parse(generatedContent);
+      
+      if (!parsedContent.html || !parsedContent.css || !parsedContent.javascript) {
+        throw new Error('Invalid response format');
+      }
+
+      return NextResponse.json(parsedContent);
+    } catch (parseError) {
+      console.error('Error parsing OpenAI response:', parseError);
+      throw new Error('Invalid response format');
+    }
   } catch (error) {
     console.error('OpenAI API error:', error);
     return NextResponse.json(
