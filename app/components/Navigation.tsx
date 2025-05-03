@@ -1,10 +1,8 @@
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { headers } from 'next/headers';
 
 export function Navigation() {
-  const pathname = usePathname();
+  const pathname = headers().get('x-pathname') || '/';
 
   return (
     <nav className="bg-gray-800 text-white">
