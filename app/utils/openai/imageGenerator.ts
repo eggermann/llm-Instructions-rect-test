@@ -80,17 +80,13 @@ export async function generateWidgetWithImage(
   z-index: 1;
   width: 100%;
   color: ${colorScheme.primary};
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  font-weight: 500;
+
 }
 
 /* Text container for better contrast */
 .widget-content > * {
-  background-color: rgba(255, 255, 255, 0.85);
-  border-left: 3px solid ${colorScheme.secondary};
   padding: 1rem;
   border-radius: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin: 0.5rem 0;
 }
 
