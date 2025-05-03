@@ -70,7 +70,7 @@ export default function DynamicRect({ html, css, javascript, height = '300px' }:
 
     // Execute JavaScript
     const script = document.createElement('script');
-    script.text = `
+    const scriptContent = `
       (function() {
         const container = document.querySelector('.${uniqueClass}');
         try {
@@ -85,6 +85,7 @@ export default function DynamicRect({ html, css, javascript, height = '300px' }:
         }
       })();
     `;
+    script.appendChild(document.createTextNode(scriptContent));
     currentContainer.appendChild(script);
 
     // Store cleanup function

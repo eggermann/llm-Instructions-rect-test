@@ -29,7 +29,7 @@ function EditModal({ prompt, onClose, onSave }: EditModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex flex-wrap items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
         <h2 className="text-xl font-semibold mb-4">Edit Prompt</h2>
         <form onSubmit={handleSubmit}>
@@ -168,31 +168,31 @@ export function PromptList() {
                 <p className="text-sm text-gray-500">
                   {new Date(prompt.createdAt).toLocaleDateString()}
                 </p>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Link
-                    href={`/instruction/${prompt.id}`}
-                    className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 flex-1 text-center"
-                  >
-                    View
-                  </Link>
-                  <Link
-                    href={`/test?prompt=${prompt.id}`}
-                    className="px-3 py-1 text-sm bg-green-100 rounded hover:bg-green-200 flex-1 text-center"
-                  >
-                    Test
-                  </Link>
-                  <button
-                    onClick={() => setEditingPrompt(prompt)}
-                    className="px-3 py-1 text-sm bg-blue-100 rounded hover:bg-blue-200 flex-1"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(prompt.id)}
-                    className="px-3 py-1 text-sm bg-red-100 rounded hover:bg-red-200 flex-1"
-                  >
-                    Delete
-                  </button>
+                   href={`/instruction/${prompt.id}`}
+                   className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 text-center min-w-[60px]"
+                   >
+                   View
+                   </Link>
+                   <Link
+                     href={`/test?prompt=${prompt.id}`}
+                     className="px-3 py-1 text-sm bg-green-100 rounded hover:bg-green-200 text-center min-w-[60px]"
+                   >
+                     Test
+                   </Link>
+                   <button
+                     onClick={() => setEditingPrompt(prompt)}
+                     className="px-3 py-1 text-sm bg-blue-100 rounded hover:bg-blue-200 min-w-[60px]"
+                   >
+                     Edit
+                   </button>
+                   <button
+                     onClick={() => handleDelete(prompt.id)}
+                     className="px-3 py-1 text-sm bg-red-100 rounded hover:bg-red-200 min-w-[60px]"
+                   >
+                     Delete
+                   </button>
                 </div>
               </div>
             </div>

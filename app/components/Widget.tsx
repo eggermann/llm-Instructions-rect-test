@@ -74,7 +74,7 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
 
         {activeTab === 'preview' && (
           <div>
-            <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+            <div className="p-4 bg-gray-50 border-b flex flex-wrap justify-between items-center gap-2">
               <h2 className="text-lg font-semibold">Generated Banner</h2>
               <div className="space-x-2">
                 <button
@@ -125,7 +125,7 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
                         Edit
                       </button>
                       <button
-                        onClick={() => copyToClipboard(editedData[field])}
+                        onClick={() => copyToClipboard(editedData[field] || '')}
                         className="text-sm text-blue-500 hover:text-blue-600"
                       >
                         Copy
