@@ -17,34 +17,6 @@ A Next.js application that leverages OpenAI's GPT models to generate responsive,
   - Dynamic image placement optimization
   - Automatic alt text generation
 
-- 📱 **Advanced Responsive Features**
-  - Mobile-first approach
-  - Dynamic font sizing
-  - Flexible layouts
-  - Touch-friendly interactions
-  - Progressive enhancement
-
-- 🔍 **Smart Text Rendering**
-  - Auto-adjusting contrast
-  - Backdrop blur effects
-  - Text shadow optimization
-  - Font weight adaptation
-  - Dynamic spacing calculations
-
-- 🎯 **Performance Optimizations**
-  - Intersection Observer implementation
-  - Lazy loading of resources
-  - Code splitting
-  - Memory leak prevention
-  - Cleanup management
-
-- 🎭 **Theme System**
-  - Dynamic color schemes
-  - Contextual adaptation
-  - Accessibility considerations
-  - Dark/light mode support
-  - Custom theme injection
-
 ## Technical Architecture
 
 ### Core Components
@@ -156,46 +128,6 @@ app/
   - DALL-E 3
   - Streaming Responses
   - Error Handling
-
-## Development Guidelines
-
-### Code Style
-- Use TypeScript for all new code
-- Follow ESLint configuration
-- Implement proper error handling
-- Add JSDoc comments for complex functions
-- Write unit tests for utilities
-
-### Git Workflow
-1. Create feature branch from `main`
-2. Follow conventional commits
-3. Keep PRs focused and small
-4. Request reviews when ready
-5. Squash merge to main
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch:
-```bash
-git checkout -b feature/amazing-feature
-```
-3. Commit your changes:
-```bash
-git commit -m 'feat: add some amazing feature'
-```
-4. Push to the branch:
-```bash
-git push origin feature/amazing-feature
-```
-5. Open a Pull Request
-
-### Pull Request Guidelines
-- Include comprehensive description
-- Add tests if applicable
-- Update documentation
-- Link related issues
-- Request appropriate reviewers
 
 ## License
 
