@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+interface Prompt {
+  id: number;
+  content: string;
+  createdAt: string;
+}
+
+interface PromptsData {
+  prompts: Prompt[];
+}
+
 const DB_PATH = path.join(process.cwd(), 'data', 'prompts.json');
 
-function getPrompts() {
+function getPrompts(): PromptsData {
   if (!fs.existsSync(DB_PATH)) {
     return { prompts: [] };
   }
@@ -12,7 +22,7 @@ function getPrompts() {
   return JSON.parse(data);
 }
 
-function savePrompts(prompts: any) {
+function savePrompts(prompts: PromptsData) {
   const dirPath = path.dirname(DB_PATH);
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -23,6 +33,10 @@ function savePrompts(prompts: any) {
 export async function GET() {
   try {
     const data = getPrompts();
+    // Sort prompts by createdAt in descending order (newest first)
+    data.prompts.sort((a: Prompt, b: Prompt) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading prompts:', error);

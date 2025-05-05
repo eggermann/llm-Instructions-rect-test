@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { PromptList } from './components/PromptList';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
+  const router = useRouter();
   const [promptInput, setPromptInput] = useState('');
 
   const [key, setKey] = useState(0); // Add key for forcing re-render
@@ -45,12 +47,21 @@ export default function HomePage() {
                 className="flex-1 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-sm"
-              >
-                Add Prompt
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-sm"
+                >
+                  Add Prompt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/test?prompt=${encodeURIComponent(promptInput)}`)}
+                  className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-sm"
+                >
+                  Test Widget
+                </button>
+              </div>
             </div>
             <p className="text-sm text-gray-600">
               Tip: Include URLs in your prompt to automatically scrape and incorporate content.

@@ -21,57 +21,67 @@ export default function TestPage() {
   const searchParams = useSearchParams();
   const promptId = searchParams.get('prompt');
 
-  const [prompts, setPrompts] = useState<any[]>([]);
-  const [selectedPromptId, setSelectedPromptId] = useState<string>(promptId || '');
+  const [prompts, setPrompts] = useState<Array<{ id: number; content: string }>>([]);
+  const [promptContent, setPromptContent] = useState<string>('');
+  const [selectedPromptId, setSelectedPromptId] = useState<string>('');
   const [widgetData, setWidgetData] = useState<WidgetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [widgetName, setWidgetName] = useState('');
-  const [listKey, setListKey] = useState(0); // Add key for forcing list refresh
-  const [widgetKey, setWidgetKey] = useState(0); // Add key for forcing widget re-render
+  const [widgetKey, setWidgetKey] = useState(0);
+  const [listKey, setListKey] = useState(0);
 
   useEffect(() => {
-    fetchPrompts();
-  }, []);
+    if (promptId) {
+      fetchPrompt(promptId);
+    } else {
+      fetchPrompts();
+      setPromptContent(''); // Reset prompt content when no promptId
+    }
+  }, [promptId]);
 
   const fetchPrompts = async () => {
     try {
       const response = await fetch('/api/prompts');
       const data = await response.json();
-      setPrompts(data.prompts);
-      
-      if (!selectedPromptId && data.prompts.length > 0) {
-        setSelectedPromptId(String(data.prompts[0].id));
-      }
+      setPrompts(data.prompts || []);
     } catch (error) {
       console.error('Error fetching prompts:', error);
       setError('Failed to load prompts');
     }
   };
 
+  const fetchPrompt = async (id: string) => {
+    try {
+      const response = await fetch(`/api/prompts/${id}`);
+      const data = await response.json();
+      setPromptContent(data.content);
+    } catch (error) {
+      console.error('Error fetching prompt:', error);
+      setError('Failed to load prompt');
+    }
+  };
+
   const generateWidget = async () => {
-    if (!selectedPromptId) return;
+    if (!promptContent?.trim()) return;
 
     setLoading(true);
     setError(null);
     try {
-      const selectedPrompt = prompts.find(p => String(p.id) === selectedPromptId);
-      if (!selectedPrompt) throw new Error('Prompt not found');
-
       const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: selectedPrompt.content }),
+        body: JSON.stringify({ prompt: promptContent }),
       });
       
       if (!response.ok) throw new Error('Failed to generate widget');
       
       const data = await response.json();
       setWidgetData(data);
-      setWidgetKey(prev => prev + 1); // Force widget to re-render
+      setWidgetKey(prev => prev + 1);
     } catch (error) {
       console.error('Error generating widget:', error);
       setError('Failed to generate widget. Please try again.');
@@ -80,26 +90,42 @@ export default function TestPage() {
     }
   };
 
-  const handleSaveWidget = () => {
-    if (!widgetData || !widgetName.trim()) return;
+  const handleSavePrompt = async () => {
+    if (!promptContent?.trim()) return;
 
-    if (!selectedPromptId || !widgetData) return;
+    try {
+      const response = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: promptContent })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        window.location.href = `/instruction/${data.id}`;
+      } else {
+        throw new Error('Failed to save prompt');
+      }
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      setError('Failed to save prompt');
+    }
+  };
+
+  const handleSaveWidget = () => {
+    if (!widgetData || !widgetName.trim() || !promptId) return;
     
     try {
-      const prompt = prompts.find(p => String(p.id) === selectedPromptId);
-      if (!prompt) throw new Error('Prompt not found');
-
       const savedWidget = widgetStore.saveWidget({
         name: widgetName,
         data: widgetData,
-        promptId: selectedPromptId
-      }, selectedPromptId);
+        promptId
+      }, promptId);
 
-      // Redirect to the portfolio page after saving
-      window.location.href = `/instruction/${selectedPromptId}#${savedWidget.id}`;
+      window.location.href = `/instruction/${promptId}#${savedWidget.id}`;
       setShowSaveDialog(false);
       setWidgetName('');
-      setListKey(prev => prev + 1); // Force WidgetList to refresh
+      setListKey(prev => prev + 1);
     } catch (error) {
       console.error('Error saving widget:', error);
       alert('Failed to save widget. Please try again.');
@@ -120,29 +146,56 @@ export default function TestPage() {
       
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
-          Select a Prompt
+          {promptId ? 'Edit Prompt' : 'Select a Prompt'}
         </label>
-        <div className="flex gap-4">
-          <select
-            id="prompt"
-            value={selectedPromptId}
-            onChange={(e) => setSelectedPromptId(e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">Select a prompt...</option>
-            {prompts.map((prompt) => (
-              <option key={prompt.id} value={prompt.id}>
-                {prompt.content.substring(0, 100)}...
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={generateWidget}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap"
-            disabled={loading || !selectedPromptId}
-          >
-            {loading ? 'Generating...' : 'Generate Widget'}
-          </button>
+        <div className="flex flex-col gap-4">
+          {promptId ? (
+            <textarea
+              id="prompt"
+              value={promptContent}
+              onChange={(e) => setPromptContent(e.target.value)}
+              className="w-full h-32 p-2 border rounded-md focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Enter your prompt here..."
+            />
+          ) : (
+            <select
+              id="prompt"
+              value={selectedPromptId}
+              onChange={(e) => {
+                setSelectedPromptId(e.target.value);
+                const selected = prompts.find(p => String(p.id) === e.target.value);
+                if (selected) {
+                  setPromptContent(selected.content);
+                }
+              }}
+              className="block w-full rounded-md border p-2 focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">Select a prompt...</option>
+              {prompts.map((prompt) => (
+                <option key={prompt.id} value={prompt.id}>
+                  {prompt.content?.substring(0, 100) || ''}...
+                </option>
+              ))}
+            </select>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={generateWidget}
+              disabled={loading || !promptContent?.trim()}
+              className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              {loading ? 'Generating...' : 'Generate Widget'}
+            </button>
+            {promptId && (
+              <button
+                onClick={handleSavePrompt}
+                disabled={loading || !promptContent?.trim()}
+                className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                Save Prompt
+              </button>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -155,13 +208,10 @@ export default function TestPage() {
                 <p className="text-red-600 font-medium">{error}</p>
               </div>
               <button
-                onClick={() => {
-                  setError(null);
-                  generateWidget();
-                }}
+                onClick={() => setError(null)}
                 className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-md hover:bg-red-200"
               >
-                Retry
+                Dismiss
               </button>
             </div>
           </div>
@@ -177,7 +227,7 @@ export default function TestPage() {
 
       {widgetData && (
         <div className="space-y-4">
-          <Widget key={widgetKey} data={widgetData as WidgetData} />
+          <Widget key={widgetKey} data={widgetData} />
           <div className="flex justify-end">
             <button
               onClick={() => setShowSaveDialog(true)}
