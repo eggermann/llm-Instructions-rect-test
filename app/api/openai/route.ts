@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/app/utils/logger';
 import { generateWidgetWithImage } from '@/app/utils/openai';
 import { extractUrls, scrapeMultipleUrls } from '@/app/utils/urlScraper';
-
+import { extractUrlsFromText } from '@/app/utils/openai/urlProcessor';
 /**
  * OpenAI API route handler for generating widgets
  */
@@ -21,7 +21,9 @@ export async function POST(request: Request) {
     logger.info('Processing widget generation request', { prompt });
 
     // Extract and scrape URLs if present
-    const urls = extractUrls(prompt);
+   // const urls = extractUrls(prompt);
+   const urls =extractUrlsFromText(prompt)
+    logger.info('Extracted URLs from prompt', { urls });
     let additionalContext = '';
     
     if (urls.length > 0) {
