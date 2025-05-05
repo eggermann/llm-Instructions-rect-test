@@ -21,11 +21,13 @@ export async function POST(request: Request) {
     logger.info('Processing widget generation request', { prompt });
 
     // Extract and scrape URLs if present
-   // const urls = extractUrls(prompt);
-   const urls =extractUrlsFromText(prompt)
+    // const urls = extractUrls(prompt);
+    const urls = await extractUrlsFromText(prompt);
+
     logger.info('Extracted URLs from prompt', { urls });
+
     let additionalContext = '';
-    
+
     if (urls.length > 0) {
       logger.info('Found URLs in prompt', { urls });
       try {
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
 
     // Generate widget with background image and scraped context
     const widget = await generateWidgetWithImage(prompt, additionalContext);
-    
+
     logger.info('Successfully generated widget with image', {
       promptLength: prompt.length,
       htmlLength: widget.html.length,
@@ -55,10 +57,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(widget);
   } catch (error) {
-    logger.error('Error in widget generation', { 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error('Error in widget generation', {
+      error: error instanceof Error ? error.message : String(error)
     });
-    
+
     return NextResponse.json(
       { error: 'Failed to generate widget content' },
       { status: 500 }
