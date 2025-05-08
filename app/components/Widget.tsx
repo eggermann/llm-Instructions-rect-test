@@ -61,8 +61,8 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
                 key={id}
                 className={`px-4 py-2 text-sm font-medium ${
                   activeTab === id
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-gray-500 hover:text-secondary'
                 }`}
                 onClick={() => setActiveTab(id as TabType)}
               >
@@ -79,14 +79,14 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
               <div className="space-x-2">
                 <button
                   onClick={() => setActiveTab('code')}
-                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary-dark"
                 >
                   View Code
                 </button>
                 {onSave && (
                   <button
                     onClick={() => handleSave()}
-                    className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                    className="px-3 py-1 text-sm bg-secondary text-white rounded hover:bg-secondary-dark"
                   >
                     Save Changes
                   </button>
@@ -150,8 +150,8 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
                     key={tab}
                     className={`px-3 py-2 text-sm ${
                       editTab === tab
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-primary border-b-2 border-primary'
+                        : 'text-gray-500 hover:text-secondary'
                     }`}
                     onClick={() => setEditTab(tab)}
                   >
@@ -181,7 +181,7 @@ const Widget: React.FC<WidgetProps> = ({ data, onSave }) => {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="px-4 py-2 text-sm bg-primary text-white rounded hover:bg-primary-dark"
                 >
                   Apply Changes
                 </button>
