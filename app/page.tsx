@@ -1,4 +1,4 @@
-'use client';
+
 import { useState } from 'react';
 import { PromptList } from './components/PromptList';
 import { useRouter } from 'next/navigation';
